@@ -47,8 +47,8 @@ class SUNRGBDInstance(object):
         self.orientation = np.zeros((3, ))
         self.orientation[0] = data[11]
         self.orientation[1] = data[12]
-        self.heading_angle = -1 * np.arctan2(self.orientation[1],
-                                             self.orientation[0])
+        self.heading_angle = np.arctan2(self.orientation[1],
+                                        self.orientation[0])
         self.box3d = np.concatenate([
             self.centroid,
             np.array([self.l * 2, self.w * 2, self.h * 2, self.heading_angle])

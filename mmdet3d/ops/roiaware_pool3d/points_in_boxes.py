@@ -80,3 +80,29 @@ def points_in_boxes_batch(points, boxes):
                                               box_idxs_of_pts)
 
     return box_idxs_of_pts
+
+
+def points_in_boxes_batch_new(points, boxes):
+    """Find points that are in boxes (CUDA)
+
+    Args:
+        points (torch.Tensor): [B, M, 3], [x, y, z] in LiDAR coordinate
+        boxes (torch.Tensor): [B, T, 7],
+            num_valid_boxes <= T, [x, y, z, dx, dy, dz, ry]
+            (x, y, z) is the bottom center.
+
+    Returns:
+        box_idxs_of_pts (torch.Tensor): (B, M, T), default background = 0
+    """
+    assert boxes.shape[0] == points.shape[0]
+    assert boxes.shape[2] == 7
+    batch_size, num_points, _ = points.shape
+    num_boxes = boxes.shape[1]
+
+    box_idxs_of_pts = points.new_zeros((batch_size, num_points, num_boxes),
+                                       dtype=torch.int).fill_(0)
+    roiaware_pool3d_ext.points_in_boxes_batch(boxes.contiguous(),
+                                              points.contiguous(),
+                                              box_idxs_of_pts)
+
+    return box_idxs_of_pts
