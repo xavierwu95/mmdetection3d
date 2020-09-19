@@ -81,7 +81,7 @@ def _draw_bboxes(bbox3d,
         yaw[rot_axis] = bbox3d[i, 6]
         rot_mat = geometry.get_rotation_matrix_from_xyz(yaw)
         if bottom_center:
-            center[2] += dim[2] / 2  # bottom center to gravity center
+            center[rot_axis] += dim[2] / 2  # bottom center to gravity center
         box3d = geometry.OrientedBoundingBox(center, rot_mat, dim)
 
         line_set = geometry.LineSet.create_from_oriented_bounding_box(box3d)
