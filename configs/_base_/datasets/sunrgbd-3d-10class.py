@@ -9,11 +9,7 @@ train_pipeline = [
         load_dim=6,
         use_dim=[0, 1, 2]),
     dict(type='LoadAnnotations3D'),
-    dict(
-        type='RandomFlip3D',
-        sync_2d=False,
-        flip_ratio_bev_horizontal=0.5,
-    ),
+    dict(type='RandomFlip3D', sync_2d=False, flip_ratio_bev_horizontal=0.5),
     dict(
         type='GlobalRotScaleTrans',
         rot_range=[-0.523599, 0.523599],
