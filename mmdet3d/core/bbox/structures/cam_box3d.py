@@ -33,6 +33,7 @@ class CameraInstance3DBoxes(BaseInstance3DBoxes):
         with_yaw (bool): If True, the value of yaw will be set to 0 as minmax
             boxes.
     """
+    rotate_axis = 1
 
     @property
     def height(self):

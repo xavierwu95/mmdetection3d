@@ -21,6 +21,29 @@
   CHECK_CONTIGUOUS(x)
 // #define DEBUG
 
+__device__ inline void lidar_to_local_coords_new(float shift_x, float shift_y, float rot_angle, float &local_x, float &local_y){
+    float cosa = cos(-rot_angle), sina = sin(-rot_angle);
+    local_x = shift_x * cosa + shift_y * (-sina);
+    local_y = shift_x * sina + shift_y * cosa;
+}
+
+
+__device__ inline int check_pt_in_box3d_new(const float *pt, const float *box3d, float &local_x, float &local_y){
+    // param pt: (x, y, z)
+    // param box3d: [x, y, z, dx, dy, dz, heading] (x, y, z) is the box center
+
+    const float MARGIN = 1e-5;
+    float x = pt[0], y = pt[1], z = pt[2];
+    float cx = box3d[0], cy = box3d[1], cz = box3d[2];
+    float dx = box3d[3], dy = box3d[4], dz = box3d[5], rz = box3d[6];
+    cz += dz / 2.0;  // shift to the center since cz in box3d is the bottom center
+
+    if (fabsf(z - cz) > dz / 2.0) return 0;
+    lidar_to_local_coords_new(x - cx, y - cy, rz, local_x, local_y);
+    float in_flag = (fabs(local_x) < dx / 2.0 + MARGIN) & (fabs(local_y) < dy / 2.0 + MARGIN);
+    return in_flag;
+}
+
 __device__ inline void lidar_to_local_coords(float shift_x, float shift_y,
                                              float rz, float &local_x,
                                              float &local_y) {
@@ -81,9 +104,9 @@ __global__ void points_in_boxes_batch_kernel(int batch_size, int boxes_num,
                                              const float *pts,
                                              int *box_idx_of_points) {
   // params boxes: (B, N, 7) [x, y, z, w, l, h, rz] in LiDAR coordinate, z is
-  // the bottom center, each box DO NOT overlaps params pts: (B, npoints, 3) [x,
-  // y, z] in LiDAR coordinate params boxes_idx_of_points: (B, npoints), default
-  // -1
+  // the bottom center
+  // params pts: (B, npoints, 3) [x, y, z] in
+  // params boxes_idx_of_points: (B, npoints, N), default 0
 
   int bs_idx = blockIdx.y;
   int pt_idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -96,7 +119,7 @@ __global__ void points_in_boxes_batch_kernel(int batch_size, int boxes_num,
   float local_x = 0, local_y = 0;
   int cur_in_flag = 0;
   for (int k = 0; k < boxes_num; k++) {
-    cur_in_flag = check_pt_in_box3d(pts, boxes + k * 7, local_x, local_y);
+    cur_in_flag = check_pt_in_box3d_new(pts, boxes + k * 7, local_x, local_y);
     if (cur_in_flag) {
       box_idx_of_points[k] = 1;
     }

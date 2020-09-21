@@ -1,6 +1,11 @@
 from __future__ import division
 
 import argparse
+
+# isort: off
+# must import open3d before import torch
+import open3d  # noqa: F401
+# isort: on
 import copy
 import logging
 import mmcv

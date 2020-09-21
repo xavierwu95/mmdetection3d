@@ -3,7 +3,7 @@ import torch
 
 from mmdet3d.ops import points_in_boxes_batch
 from .base_box3d import BaseInstance3DBoxes
-from .utils import limit_period, rotation_3d_in_axis
+from .utils import limit_period, rotation_3d_in_axis_new
 
 
 class DepthInstance3DBoxes(BaseInstance3DBoxes):
@@ -31,6 +31,7 @@ class DepthInstance3DBoxes(BaseInstance3DBoxes):
         with_yaw (bool): If True, the value of yaw will be set to 0 as minmax
             boxes.
     """
+    rotate_axis = 2
 
     @property
     def gravity_center(self):
@@ -78,7 +79,7 @@ class DepthInstance3DBoxes(BaseInstance3DBoxes):
         corners = dims.view([-1, 1, 3]) * corners_norm.reshape([1, 8, 3])
 
         # rotate around z axis
-        corners = rotation_3d_in_axis(corners, self.tensor[:, 6], axis=2)
+        corners = rotation_3d_in_axis_new(corners, self.tensor[:, 6], axis=2)
         corners += self.tensor[:, :3].view(-1, 1, 3)
         return corners
 
@@ -126,12 +127,12 @@ class DepthInstance3DBoxes(BaseInstance3DBoxes):
             angle = self.tensor.new_tensor(angle)
         rot_sin = torch.sin(angle)
         rot_cos = torch.cos(angle)
-        rot_mat_T = self.tensor.new_tensor([[rot_cos, -rot_sin, 0],
-                                            [rot_sin, rot_cos, 0], [0, 0,
-                                                                    1]]).T
+        rot_mat = self.tensor.new_tensor([[rot_cos, -rot_sin, 0],
+                                          [rot_sin, rot_cos, 0], [0, 0, 1]])
+        rot_mat_T = rot_mat.T
         self.tensor[:, 0:3] = self.tensor[:, 0:3] @ rot_mat_T
         if self.with_yaw:
-            self.tensor[:, 6] -= angle
+            self.tensor[:, 6] += angle
         else:
             corners_rot = self.corners @ rot_mat_T
             new_x_size = corners_rot[..., 0].max(
@@ -230,25 +231,18 @@ class DepthInstance3DBoxes(BaseInstance3DBoxes):
         Args:
             points (torch.Tensor): Points in shape [1, M, 3] or [M, 3], \
                 3 dimensions are [x, y, z] in LiDAR coordinate.
-
         Returns:
             torch.Tensor: The index of boxes each point lies in with shape \
                 of (B, M, T).
         """
-        from .box_3d_mode import Box3DMode
-
-        # to lidar
-        points_lidar = points.clone()
-        points_lidar = points_lidar[..., [1, 0, 2]]
-        points_lidar[..., 1] *= -1
-        if points.dim() == 2:
-            points_lidar = points_lidar.unsqueeze(0)
+        points_clone = points[..., [0, 1, 2]]
+        if points_clone.dim() == 2:
+            points_clone = points_clone.unsqueeze(0)
         else:
-            assert points.dim() == 3 and points_lidar.shape[0] == 1
+            assert points_clone.dim() == 3 and points_clone.shape[0] == 1
 
-        boxes_lidar = self.convert_to(Box3DMode.LIDAR).tensor
-        boxes_lidar = boxes_lidar.to(points.device).unsqueeze(0)
-        box_idxs_of_pts = points_in_boxes_batch(points_lidar, boxes_lidar)
+        boxes = self.tensor.to(points_clone.device).unsqueeze(0)
+        box_idxs_of_pts = points_in_boxes_batch(points_clone, boxes)
 
         return box_idxs_of_pts.squeeze(0)
 
