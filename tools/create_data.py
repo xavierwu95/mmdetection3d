@@ -1,6 +1,11 @@
 import argparse
 from os import path as osp
 
+# isort: off
+# must import open3d before import torch
+import open3d  # noqa: F401
+# isort: on
+
 from tools.data_converter import indoor_converter as indoor
 from tools.data_converter import kitti_converter as kitti
 from tools.data_converter import lyft_converter as lyft_converter

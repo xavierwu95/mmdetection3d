@@ -39,10 +39,12 @@ def box_camera_to_lidar(data, r_rect, velo2cam):
         np.ndarray, shape=[N, 3]: Boxes in lidar coordinate.
     """
     xyz = data[:, 0:3]
-    l, h, w = data[:, 3:4], data[:, 4:5], data[:, 5:6]
-    r = data[:, 6:7]
+    # whl (dx, dy, dz in camera coordinate)
+    width, height, length = data[:, 3:4], data[:, 4:5], data[:, 5:6]
+    r = -(data[:, 6:7] + np.pi / 2)  # camera to lidar
     xyz_lidar = camera_to_lidar(xyz, r_rect, velo2cam)
-    return np.concatenate([xyz_lidar, w, l, h, r], axis=1)
+    # lwh (dx, dy, dz in lidar coordinate)
+    return np.concatenate([xyz_lidar, length, width, height, r], axis=1)
 
 
 def corners_nd(dims, origin=0.5):
@@ -55,7 +57,7 @@ def corners_nd(dims, origin=0.5):
     Returns:
         np.ndarray, shape=[N, 2 ** ndim, ndim]: Returned corners.
         point layout example: (2d) x0y0, x0y1, x1y0, x1y1;
-            (3d) x0y0z0, x0y0z1, x0y1z0, x0y1z1, x1y0z0, x1y0z1, x1y1z0, x1y1z1
+            (3d) x0y0z0, x0y0z1, x0y1z1, x0y1z0, x1y0z0, x1y0z1, x1y1z1, x1y1z0
             where x0 < x1, y0 < y1, z0 < z1.
     """
     ndim = int(dims.shape[1])
@@ -198,6 +200,37 @@ def rotation_3d_in_axis(points, angles, axis=0):
     return np.einsum('aij,jka->aik', points, rot_mat_T)
 
 
+def rotation_3d_in_axis_new(points, angles, axis=0):
+    """Rotate points in specific axis.
+
+    Args:
+        points (np.ndarray, shape=[N, point_size, 3]]):
+        angles (np.ndarray, shape=[N]]):
+        axis (int): Axis to rotate at.
+
+    Returns:
+        np.ndarray: Rotated points.
+    """
+    # points: [N, point_size, 3]
+    rot_sin = np.sin(-angles)
+    rot_cos = np.cos(-angles)
+    ones = np.ones_like(rot_cos)
+    zeros = np.zeros_like(rot_cos)
+    if axis == 1:
+        rot_mat_T = np.stack([[rot_cos, zeros, -rot_sin], [zeros, ones, zeros],
+                              [rot_sin, zeros, rot_cos]])
+    elif axis == 2 or axis == -1:
+        rot_mat_T = np.stack([[rot_cos, -rot_sin, zeros],
+                              [rot_sin, rot_cos, zeros], [zeros, zeros, ones]])
+    elif axis == 0:
+        rot_mat_T = np.stack([[zeros, rot_cos, -rot_sin],
+                              [zeros, rot_sin, rot_cos], [ones, zeros, zeros]])
+    else:
+        raise ValueError('axis should in range')
+
+    return np.einsum('aij,jka->aik', points, rot_mat_T)
+
+
 def center_to_corner_box3d(centers,
                            dims,
                            angles=None,
@@ -222,7 +255,7 @@ def center_to_corner_box3d(centers,
     corners = corners_nd(dims, origin=origin)
     # corners: [N, 8, 3]
     if angles is not None:
-        corners = rotation_3d_in_axis(corners, angles, axis=axis)
+        corners = rotation_3d_in_axis_new(corners, angles, axis=axis)
     corners += centers.reshape([-1, 1, 3])
     return corners
 

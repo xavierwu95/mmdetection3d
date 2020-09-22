@@ -114,10 +114,10 @@ def get_label_anno(label_path):
     annotations['alpha'] = np.array([float(x[3]) for x in content])
     annotations['bbox'] = np.array([[float(info) for info in x[4:8]]
                                     for x in content]).reshape(-1, 4)
-    # dimensions will convert hwl format to standard lhw(camera) format.
+    # dimensions will convert hwl format to whl (dx, dy, dz)(camera) format.
     annotations['dimensions'] = np.array([[float(info) for info in x[8:11]]
                                           for x in content
-                                          ]).reshape(-1, 3)[:, [2, 0, 1]]
+                                          ]).reshape(-1, 3)[:, [1, 0, 2]]
     annotations['location'] = np.array([[float(info) for info in x[11:14]]
                                         for x in content]).reshape(-1, 3)
     annotations['rotation_y'] = np.array([float(x[14])
