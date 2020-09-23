@@ -3,8 +3,8 @@ import torch
 from mmcv.cnn import bias_init_with_prob, normal_init
 from torch import nn as nn
 
-from mmdet3d.core import (PseudoSampler, box3d_multiclass_nms, limit_period,
-                          xywhr2xyxyr)
+from mmdet3d.core import PseudoSampler, box3d_multiclass_nms, limit_period
+from mmdet3d.core.bbox.structures.utils import xywhr2xyxyr_newr
 from mmdet.core import (build_anchor_generator, build_assigner,
                         build_bbox_coder, build_sampler, multi_apply)
 from mmdet.models import HEADS
@@ -50,7 +50,7 @@ class Anchor3DHead(nn.Module, AnchorTrainMixin):
                      type='Anchor3DRangeGenerator',
                      range=[0, -39.68, -1.78, 69.12, 39.68, -1.78],
                      strides=[2],
-                     sizes=[[1.6, 3.9, 1.56]],
+                     sizes=[[3.9, 1.6, 1.56]],
                      rotations=[0, 1.57],
                      custom_values=[],
                      reshape_out=False),
@@ -459,7 +459,8 @@ class Anchor3DHead(nn.Module, AnchorTrainMixin):
             mlvl_dir_scores.append(dir_cls_score)
 
         mlvl_bboxes = torch.cat(mlvl_bboxes)
-        mlvl_bboxes_for_nms = xywhr2xyxyr(input_meta['box_type_3d'](
+        # TODO: tmp setting
+        mlvl_bboxes_for_nms = xywhr2xyxyr_newr(input_meta['box_type_3d'](
             mlvl_bboxes, box_dim=self.box_code_size).bev)
         mlvl_scores = torch.cat(mlvl_scores)
         mlvl_dir_scores = torch.cat(mlvl_dir_scores)

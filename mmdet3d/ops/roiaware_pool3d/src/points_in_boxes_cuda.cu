@@ -91,7 +91,7 @@ __global__ void points_in_boxes_kernel(int batch_size, int boxes_num,
   float local_x = 0, local_y = 0;
   int cur_in_flag = 0;
   for (int k = 0; k < boxes_num; k++) {
-    cur_in_flag = check_pt_in_box3d(pts, boxes + k * 7, local_x, local_y);
+    cur_in_flag = check_pt_in_box3d_new(pts, boxes + k * 7, local_x, local_y);
     if (cur_in_flag) {
       box_idx_of_points[0] = k;
       break;

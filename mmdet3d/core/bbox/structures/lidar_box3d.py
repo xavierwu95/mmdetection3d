@@ -3,7 +3,7 @@ import torch
 
 from mmdet3d.ops.roiaware_pool3d import points_in_boxes_gpu
 from .base_box3d import BaseInstance3DBoxes
-from .utils import limit_period, rotation_3d_in_axis
+from .utils import limit_period, rotation_3d_in_axis_new
 
 
 class LiDARInstance3DBoxes(BaseInstance3DBoxes):
@@ -79,7 +79,7 @@ class LiDARInstance3DBoxes(BaseInstance3DBoxes):
         corners = dims.view([-1, 1, 3]) * corners_norm.reshape([1, 8, 3])
 
         # rotate around z axis
-        corners = rotation_3d_in_axis(corners, self.tensor[:, 6], axis=2)
+        corners = rotation_3d_in_axis_new(corners, self.tensor[:, 6], axis=2)
         corners += self.tensor[:, :3].view(-1, 1, 3)
         return corners
 
@@ -127,8 +127,9 @@ class LiDARInstance3DBoxes(BaseInstance3DBoxes):
             angle = self.tensor.new_tensor(angle)
         rot_sin = torch.sin(angle)
         rot_cos = torch.cos(angle)
-        rot_mat_T = self.tensor.new_tensor([[rot_cos, -rot_sin, 0],
-                                            [rot_sin, rot_cos, 0], [0, 0, 1]])
+        rot_mat = self.tensor.new_tensor([[rot_cos, -rot_sin, 0],
+                                          [rot_sin, rot_cos, 0], [0, 0, 1]])
+        rot_mat_T = rot_mat.T
 
         self.tensor[:, :3] = self.tensor[:, :3] @ rot_mat_T
         self.tensor[:, 6] += angle
@@ -164,11 +165,11 @@ class LiDARInstance3DBoxes(BaseInstance3DBoxes):
         if bev_direction == 'horizontal':
             self.tensor[:, 1::7] = -self.tensor[:, 1::7]
             if self.with_yaw:
-                self.tensor[:, 6] = -self.tensor[:, 6] + np.pi
+                self.tensor[:, 6] = -self.tensor[:, 6]
         elif bev_direction == 'vertical':
             self.tensor[:, 0::7] = -self.tensor[:, 0::7]
             if self.with_yaw:
-                self.tensor[:, 6] = -self.tensor[:, 6]
+                self.tensor[:, 6] = -self.tensor[:, 6] + np.pi
 
         if points is not None:
             assert isinstance(points, (torch.Tensor, np.ndarray))
@@ -242,6 +243,7 @@ class LiDARInstance3DBoxes(BaseInstance3DBoxes):
         Returns:
             torch.Tensor: The index of box where each point are in.
         """
+        # TODO: make it same as depth and camera
         box_idx = points_in_boxes_gpu(
             points.unsqueeze(0),
             self.tensor.unsqueeze(0).to(points.device)).squeeze(0)

@@ -71,8 +71,8 @@ class BboxOverlaps3D(object):
             calculate the actual 3D IoUs of boxes.
 
         Args:
-            bboxes1 (torch.Tensor): shape (N, 7+C) [x, y, z, h, w, l, ry].
-            bboxes2 (torch.Tensor): shape (M, 7+C) [x, y, z, h, w, l, ry].
+            bboxes1 (torch.Tensor): shape (N, 7+C) [x, y, z, dx, dy, dz, ry].
+            bboxes2 (torch.Tensor): shape (M, 7+C) [x, y, z, dx, dy, dz, ry].
             mode (str): "iou" (intersection over union) or
                 iof (intersection over foreground).
 

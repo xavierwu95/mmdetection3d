@@ -222,9 +222,9 @@ def rbbox_to_corners(corners, rbbox):
     corners_y[2] = y_d / 2
     corners_y[3] = -y_d / 2
     for i in range(4):
-        corners[2 * i] = a_cos * corners_x[i] + a_sin * corners_y[i] + center_x
+        corners[2 * i] = a_cos * corners_x[i] - a_sin * corners_y[i] + center_x
         corners[2 * i +
-                1] = -a_sin * corners_x[i] + a_cos * corners_y[i] + center_y
+                1] = a_sin * corners_x[i] + a_cos * corners_y[i] + center_y
 
 
 @cuda.jit('(float32[:], float32[:])', device=True, inline=True)

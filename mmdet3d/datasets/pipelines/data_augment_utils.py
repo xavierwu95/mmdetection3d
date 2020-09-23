@@ -322,7 +322,7 @@ def box3d_transform_(boxes, loc_transform, rot_transform, valid_mask):
     for i in range(num_box):
         if valid_mask[i]:
             boxes[i, :3] += loc_transform[i]
-            boxes[i, 6] += rot_transform[i]
+            boxes[i, 6] -= rot_transform[i]
 
 
 def noise_per_object_v3_(gt_boxes,

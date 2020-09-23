@@ -77,7 +77,7 @@ class VoxelNet(SingleStage3DDetector):
             gt_bboxes_3d (list[:obj:`BaseInstance3DBoxes`]): Ground truth
                 boxes for each sample.
             gt_labels_3d (list[torch.Tensor]): Ground truth labels for
-                boxes of each sampole
+                boxes of each sample.
             gt_bboxes_ignore (list[torch.Tensor], optional): Ground truth
                 boxes to be ignored. Defaults to None.
 

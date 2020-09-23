@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 from .base_box3d import BaseInstance3DBoxes
-from .utils import limit_period, rotation_3d_in_axis
+from .utils import limit_period, rotation_3d_in_axis_new
 
 
 class CameraInstance3DBoxes(BaseInstance3DBoxes):
@@ -98,7 +98,7 @@ class CameraInstance3DBoxes(BaseInstance3DBoxes):
         corners = dims.view([-1, 1, 3]) * corners_norm.reshape([1, 8, 3])
 
         # rotate around y axis
-        corners = rotation_3d_in_axis(corners, self.tensor[:, 6], axis=1)
+        corners = rotation_3d_in_axis_new(corners, self.tensor[:, 6], axis=1)
         corners += self.tensor[:, :3].view(-1, 1, 3)
         return corners
 
@@ -146,9 +146,9 @@ class CameraInstance3DBoxes(BaseInstance3DBoxes):
             angle = self.tensor.new_tensor(angle)
         rot_sin = torch.sin(angle)
         rot_cos = torch.cos(angle)
-        rot_mat_T = self.tensor.new_tensor([[rot_cos, 0, -rot_sin], [0, 1, 0],
-                                            [rot_sin, 0, rot_cos]])
-
+        rot_mat = self.tensor.new_tensor([[rot_cos, 0, -rot_sin], [0, 1, 0],
+                                          [rot_sin, 0, rot_cos]])
+        rot_mat_T = rot_mat.T
         self.tensor[:, :3] = self.tensor[:, :3] @ rot_mat_T
         self.tensor[:, 6] += angle
 

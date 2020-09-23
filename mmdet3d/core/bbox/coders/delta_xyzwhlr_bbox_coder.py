@@ -18,8 +18,8 @@ class DeltaXYZWLHRBBoxCoder(BaseBBoxCoder):
 
     @staticmethod
     def encode(src_boxes, dst_boxes):
-        """Get box regression transformation deltas (dx, dy, dz, dw, dh, dl,
-        dr, dv*) that can be used to transform the `src_boxes` into the
+        """Get box regression transformation deltas (xt, yt, zt, dxt, dyt, dzt,
+        rt, dv*) that can be used to transform the `src_boxes` into the
         `target_boxes`.
 
         Args:
@@ -33,25 +33,25 @@ class DeltaXYZWLHRBBoxCoder(BaseBBoxCoder):
         box_ndim = src_boxes.shape[-1]
         cas, cgs, cts = [], [], []
         if box_ndim > 7:
-            xa, ya, za, wa, la, ha, ra, *cas = torch.split(
+            xa, ya, za, dxa, dya, dza, ra, *cas = torch.split(
                 src_boxes, 1, dim=-1)
-            xg, yg, zg, wg, lg, hg, rg, *cgs = torch.split(
+            xg, yg, zg, dxg, dyg, dzg, rg, *cgs = torch.split(
                 dst_boxes, 1, dim=-1)
             cts = [g - a for g, a in zip(cgs, cas)]
         else:
-            xa, ya, za, wa, la, ha, ra = torch.split(src_boxes, 1, dim=-1)
-            xg, yg, zg, wg, lg, hg, rg = torch.split(dst_boxes, 1, dim=-1)
-        za = za + ha / 2
-        zg = zg + hg / 2
-        diagonal = torch.sqrt(la**2 + wa**2)
+            xa, ya, za, dxa, dya, dza, ra = torch.split(src_boxes, 1, dim=-1)
+            xg, yg, zg, dxg, dyg, dzg, rg = torch.split(dst_boxes, 1, dim=-1)
+        za = za + dza / 2
+        zg = zg + dzg / 2
+        diagonal = torch.sqrt(dya**2 + dxa**2)
         xt = (xg - xa) / diagonal
         yt = (yg - ya) / diagonal
-        zt = (zg - za) / ha
-        lt = torch.log(lg / la)
-        wt = torch.log(wg / wa)
-        ht = torch.log(hg / ha)
+        zt = (zg - za) / dza
+        dxt = torch.log(dxg / dxa)
+        dyt = torch.log(dyg / dya)
+        dzt = torch.log(dzg / dza)
         rt = rg - ra
-        return torch.cat([xt, yt, zt, wt, lt, ht, rt, *cts], dim=-1)
+        return torch.cat([xt, yt, zt, dxt, dyt, dzt, rt, *cts], dim=-1)
 
     @staticmethod
     def decode(anchors, deltas):
@@ -69,22 +69,24 @@ class DeltaXYZWLHRBBoxCoder(BaseBBoxCoder):
         cas, cts = [], []
         box_ndim = anchors.shape[-1]
         if box_ndim > 7:
-            xa, ya, za, wa, la, ha, ra, *cas = torch.split(anchors, 1, dim=-1)
-            xt, yt, zt, wt, lt, ht, rt, *cts = torch.split(deltas, 1, dim=-1)
+            xa, ya, za, dxa, dya, dza, ra, *cas = torch.split(
+                anchors, 1, dim=-1)
+            xt, yt, zt, dxt, dyt, dzt, rt, *cts = torch.split(
+                deltas, 1, dim=-1)
         else:
-            xa, ya, za, wa, la, ha, ra = torch.split(anchors, 1, dim=-1)
-            xt, yt, zt, wt, lt, ht, rt = torch.split(deltas, 1, dim=-1)
+            xa, ya, za, dxa, dya, dza, ra = torch.split(anchors, 1, dim=-1)
+            xt, yt, zt, dxt, dyt, dzt, rt = torch.split(deltas, 1, dim=-1)
 
-        za = za + ha / 2
-        diagonal = torch.sqrt(la**2 + wa**2)
+        za = za + dza / 2
+        diagonal = torch.sqrt(dya**2 + dxa**2)
         xg = xt * diagonal + xa
         yg = yt * diagonal + ya
-        zg = zt * ha + za
+        zg = zt * dza + za
 
-        lg = torch.exp(lt) * la
-        wg = torch.exp(wt) * wa
-        hg = torch.exp(ht) * ha
+        dxg = torch.exp(dxt) * dxa
+        dyg = torch.exp(dyt) * dya
+        dzg = torch.exp(dzt) * dza
         rg = rt + ra
-        zg = zg - hg / 2
+        zg = zg - dzg / 2
         cgs = [t + a for t, a in zip(cts, cas)]
-        return torch.cat([xg, yg, zg, wg, lg, hg, rg, *cgs], dim=-1)
+        return torch.cat([xg, yg, zg, dxg, dyg, dzg, rg, *cgs], dim=-1)
