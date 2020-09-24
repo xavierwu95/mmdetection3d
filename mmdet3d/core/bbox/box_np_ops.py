@@ -40,11 +40,11 @@ def box_camera_to_lidar(data, r_rect, velo2cam):
     """
     xyz = data[:, 0:3]
     # whl (dx, dy, dz in camera coordinate)
-    width, height, length = data[:, 3:4], data[:, 4:5], data[:, 5:6]
+    dxc, dyc, dzc = data[:, 3:4], data[:, 4:5], data[:, 5:6]
     r = -(data[:, 6:7] + np.pi / 2)  # camera to lidar
     xyz_lidar = camera_to_lidar(xyz, r_rect, velo2cam)
     # lwh (dx, dy, dz in lidar coordinate)
-    return np.concatenate([xyz_lidar, length, width, height, r], axis=1)
+    return np.concatenate([xyz_lidar, dxc, dzc, dyc, r], axis=1)
 
 
 def corners_nd(dims, origin=0.5):

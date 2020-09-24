@@ -106,36 +106,40 @@ class Box3DMode(IntEnum):
         if src == Box3DMode.LIDAR and dst == Box3DMode.CAM:
             if rt_mat is None:
                 rt_mat = arr.new_tensor([[0, -1, 0], [0, 0, -1], [1, 0, 0]])
-            xyz_size = torch.cat([y_size, z_size, x_size], dim=-1)
+            xyz_size = torch.cat([x_size, z_size, y_size], dim=-1)
             if box.with_yaw:
-                ry_new = -(ry + np.pi / 2)
+                ry_new = -ry - np.pi / 2
         elif src == Box3DMode.CAM and dst == Box3DMode.LIDAR:
             if rt_mat is None:
                 rt_mat = arr.new_tensor([[0, 0, 1], [-1, 0, 0], [0, -1, 0]])
-            xyz_size = torch.cat([z_size, x_size, y_size], dim=-1)
+            xyz_size = torch.cat([x_size, z_size, y_size], dim=-1)
             if box.with_yaw:
-                ry_new = -(ry + np.pi / 2)
+                ry_new = -ry - np.pi / 2
         elif src == Box3DMode.DEPTH and dst == Box3DMode.CAM:
             if rt_mat is None:
                 rt_mat = arr.new_tensor([[1, 0, 0], [0, 0, 1], [0, -1, 0]])
+            # TODO: need test
             xyz_size = torch.cat([x_size, z_size, y_size], dim=-1)
             if box.with_yaw:
                 ry_new = -ry
         elif src == Box3DMode.CAM and dst == Box3DMode.DEPTH:
             if rt_mat is None:
                 rt_mat = arr.new_tensor([[1, 0, 0], [0, 0, -1], [0, 1, 0]])
+            # TODO: need test
             xyz_size = torch.cat([x_size, z_size, y_size], dim=-1)
             if box.with_yaw:
                 ry_new = -ry
         elif src == Box3DMode.LIDAR and dst == Box3DMode.DEPTH:
             if rt_mat is None:
                 rt_mat = arr.new_tensor([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
+            # TODO: need test
             xyz_size = torch.cat([y_size, x_size, z_size], dim=-1)
             if box.with_yaw:
                 ry_new = ry + np.pi / 2
         elif src == Box3DMode.DEPTH and dst == Box3DMode.LIDAR:
             if rt_mat is None:
                 rt_mat = arr.new_tensor([[0, 1, 0], [-1, 0, 0], [0, 0, 1]])
+            # TODO: need test
             xyz_size = torch.cat([y_size, x_size, z_size], dim=-1)
             if box.with_yaw:
                 ry_new = ry - np.pi / 2

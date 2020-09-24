@@ -48,7 +48,7 @@ def _draw_bboxes(bbox3d,
                  bbox_color=(0, 1, 0),
                  points_in_box_color=(1, 0, 0),
                  rot_axis=2,
-                 bottom_center=True,
+                 center_mode='lidar_bottom',
                  mode='xyz'):
     """Draw bbox and points in bbox on visualizer.
 
@@ -79,8 +79,12 @@ def _draw_bboxes(bbox3d,
         # yaw[rot_axis] = -(bbox3d[i, 6] - 0.5 * np.pi)
         yaw[rot_axis] = bbox3d[i, 6]
         rot_mat = geometry.get_rotation_matrix_from_xyz(yaw)
-        if bottom_center:
-            center[rot_axis] += dim[2] / 2  # bottom center to gravity center
+        if center_mode == 'lidar_bottom':
+            center[rot_axis] += dim[
+                rot_axis] / 2  # bottom center to gravity center
+        elif center_mode == 'camera_bottom':
+            center[rot_axis] -= dim[
+                rot_axis] / 2  # bottom center to gravity center
         box3d = geometry.OrientedBoundingBox(center, rot_mat, dim)
 
         line_set = geometry.LineSet.create_from_oriented_bounding_box(box3d)
@@ -108,7 +112,7 @@ def show_pts_boxes(points,
                    bbox_color=(0, 1, 0),
                    points_in_box_color=(1, 0, 0),
                    rot_axis=2,
-                   bottom_center=True):
+                   center_mode='lidar_bottom'):
     """open3d visualizer.
 
     Args:
@@ -124,7 +128,7 @@ def show_pts_boxes(points,
         points_in_box_color (tuple[float]):
             the color of points which are in bbox3d.
         rot_axis (int): rotation axis of bbox.
-        bottom_center (bool): indicate the center of bbox is
+        center_mode (str): indicate the center of bbox is
             bottom center or gravity center.
     """
     # TODO: support rgb points
@@ -146,7 +150,7 @@ def show_pts_boxes(points,
     # draw boxes
     if bbox3d is not None:
         _draw_bboxes(bbox3d, vis, points_colors, pcd, bbox_color,
-                     points_in_box_color, rot_axis, bottom_center, mode)
+                     points_in_box_color, rot_axis, center_mode, mode)
 
     if show:
         vis.run()
