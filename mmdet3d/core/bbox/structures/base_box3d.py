@@ -418,7 +418,6 @@ class BaseInstance3DBoxes(object):
         # bev overlap
         overlaps_bev = boxes1_bev.new_zeros(
             (boxes1_bev.shape[0], boxes2_bev.shape[0])).cuda()  # (N, M)
-        # TODO: the rotation in boxes_overlap_bev_gpu is incorrect
         iou3d_cuda.boxes_overlap_bev_gpu(boxes1_bev.contiguous().cuda(),
                                          boxes2_bev.contiguous().cuda(),
                                          overlaps_bev)
