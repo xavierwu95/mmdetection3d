@@ -48,6 +48,7 @@ class LiDARInstance3DBoxes(BaseInstance3DBoxes):
         in shape (N, 8, 3).
 
         Convert the boxes to corners in clockwise order, in form of
+        # TODO: update the order
         ``(x0y0z0, x0y0z1, x0y1z1, x0y1z0, x1y0z0, x1y0z1, x1y1z1, x1y1z0)``
 
         .. code-block:: none

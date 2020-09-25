@@ -280,16 +280,121 @@ def show_pts_index_boxes(points,
     vis.destroy_window()
 
 
+def project_pts_on_img(points,
+                       raw_img,
+                       lidar2img_rt,
+                       max_distance=70,
+                       thickness=-1):
+    img = raw_img.copy()
+    num_points = points.shape[0]
+    pts_4d = np.concatenate([points[:, :3], np.ones((num_points, 1))], axis=-1)
+    pts_2d = pts_4d @ lidar2img_rt.T
+
+    # cam_points is Tensor of Nx4 whose last column is 1
+    # transform camera coordinate to image coordinate
+    pts_2d[:, 2] = np.clip(pts_2d[:, 2], a_min=1e-5, a_max=99999)
+    pts_2d[:, 0] /= pts_2d[:, 2]
+    pts_2d[:, 1] /= pts_2d[:, 2]
+
+    fov_inds = ((pts_2d[:, 0] < img.shape[1])
+                & (pts_2d[:, 0] >= 0)
+                & (pts_2d[:, 1] < img.shape[0])
+                & (pts_2d[:, 1] >= 0))
+
+    imgfov_pts_2d = pts_2d[fov_inds, :3]  # u, v, d
+
+    cmap = plt.cm.get_cmap('hsv', 256)
+    cmap = np.array([cmap(i) for i in range(256)])[:, :3] * 255
+    for i in range(imgfov_pts_2d.shape[0]):
+        depth = imgfov_pts_2d[i, 2]
+        color = cmap[np.clip(int(max_distance * 10 / depth), 0, 255), :]
+        cv2.circle(
+            img,
+            center=(int(np.round(imgfov_pts_2d[i, 0])),
+                    int(np.round(imgfov_pts_2d[i, 1]))),
+            radius=1,
+            color=tuple(color),
+            thickness=thickness,
+        )
+    cv2.imshow('project_pts_img', img)
+    cv2.waitKey(100)
+
+
+def project_bbox3d_on_img(bboxes3d,
+                          raw_img,
+                          lidar2img_rt,
+                          color=(0, 255, 0),
+                          thickness=1):
+    img = raw_img.copy()
+    corners_3d = bboxes3d.corners
+    num_bbox = corners_3d.shape[0]
+    pts_4d = np.concatenate(
+        [corners_3d.reshape(-1, 3),
+         np.ones((num_bbox * 8, 1))], axis=-1)
+    pts_2d = pts_4d @ lidar2img_rt.T
+
+    pts_2d[:, 2] = np.clip(pts_2d[:, 2], a_min=1e-5, a_max=1e5)
+    pts_2d[:, 0] /= pts_2d[:, 2]
+    pts_2d[:, 1] /= pts_2d[:, 2]
+    imgfov_pts_2d = pts_2d[..., :2].reshape(num_bbox, 8, 2)
+
+    line_indices = ((0, 1), (0, 3), (0, 4), (1, 2), (1, 5), (3, 2), (3, 7),
+                    (4, 5), (4, 7), (2, 6), (5, 6), (6, 7))
+    for i in range(num_bbox):
+        corners = imgfov_pts_2d[i].astype(np.int)
+        for start, end in line_indices:
+            cv2.line(img, (corners[start, 0], corners[start, 1]),
+                     (corners[end, 0], corners[end, 1]), color, thickness,
+                     cv2.LINE_AA)
+
+    cv2.imshow('project_bbox3d_img', img)
+    cv2.waitKey(100)
+
+
 if __name__ == '__main__':
-    pts_filename = '/home/SENSETIME/wuyuefeng/projects/' \
-                   + 'pth_models/mmdetection3d/demo/kitti_000008.bin'
-    points = np.fromfile(pts_filename, dtype=np.float32).reshape(-1, 4)[:, :3]
-    points = torch.from_numpy(points)
-    boxes3d = np.array([[0, 0, 0, 1, 1, 1, 0], [10, 0, 0, 5, 5, 5, 0],
-                        [10, 10, 0, 1, 1, 1, 0], [10, 10, 0, 1, 1, 1, 0.8]])
+    import cv2
+    from matplotlib import pyplot as plt
 
-    show_pts_boxes(points, boxes3d, save_path='./file.png')
+    from mmdet3d.datasets import KittiDataset
 
-    print()
-    # from mmdet3d.core.visualizer.open3d_vis import show_pts_boxes
-    # show_pts_boxes(points, results['gt_bboxes_3d'].tensor)
+    data_root = 'data/kitti'
+    ann_file = 'data/kitti/kitti_infos_train.pkl'
+    classes = ['Pedestrian', 'Cyclist', 'Car']
+    pts_prefix = 'velodyne_reduced'
+    pipeline = [{
+        'type': 'LoadPointsFromFile',
+        'load_dim': 4,
+        'use_dim': 4,
+        'file_client_args': {
+            'backend': 'disk'
+        }
+    }, {
+        'type': 'LoadImageFromFile'
+    }, {
+        'type': 'LoadAnnotations3D',
+        'with_bbox_3d': True,
+        'with_label_3d': True,
+        'file_client_args': {
+            'backend': 'disk'
+        }
+    }]
+    modality = {'use_lidar': True, 'use_camera': True}
+    split = 'training'
+    self = KittiDataset(
+        data_root,
+        ann_file,
+        split,
+        pts_prefix,
+        pipeline,
+        classes,
+        modality,
+        filter_empty_gt=False)
+
+    infos = self.data_infos
+    for i in range(500):
+        data, info = self[i], infos[i]
+        points, gt_bboxes = data['points'], data['gt_bboxes_3d']
+        img = data['img']
+        lidar2img_rt = data['lidar2img']
+        project_pts_on_img(points, img, lidar2img_rt)
+        project_bbox3d_on_img(gt_bboxes, img, lidar2img_rt)
