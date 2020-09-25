@@ -3,7 +3,7 @@ import torch
 from abc import abstractmethod
 
 from mmdet3d.ops.iou3d import iou3d_cuda
-from .utils import limit_period, xywhr2xyxyr_newr
+from .utils import limit_period, xywhr2xyxyr
 
 
 class BaseInstance3DBoxes(object):
@@ -412,8 +412,8 @@ class BaseInstance3DBoxes(object):
         overlaps_h = cls.height_overlaps(boxes1, boxes2)
 
         # obtain BEV boxes in XYXYR format
-        boxes1_bev = xywhr2xyxyr_newr(boxes1.bev)
-        boxes2_bev = xywhr2xyxyr_newr(boxes2.bev)
+        boxes1_bev = xywhr2xyxyr(boxes1.bev)
+        boxes2_bev = xywhr2xyxyr(boxes2.bev)
 
         # bev overlap
         overlaps_bev = boxes1_bev.new_zeros(

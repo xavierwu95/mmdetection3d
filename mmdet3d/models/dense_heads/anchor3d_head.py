@@ -4,7 +4,7 @@ from mmcv.cnn import bias_init_with_prob, normal_init
 from torch import nn as nn
 
 from mmdet3d.core import PseudoSampler, box3d_multiclass_nms, limit_period
-from mmdet3d.core.bbox.structures.utils import xywhr2xyxyr_newr
+from mmdet3d.core.bbox.structures.utils import xywhr2xyxyr
 from mmdet.core import (build_anchor_generator, build_assigner,
                         build_bbox_coder, build_sampler, multi_apply)
 from mmdet.models import HEADS
@@ -460,7 +460,7 @@ class Anchor3DHead(nn.Module, AnchorTrainMixin):
 
         mlvl_bboxes = torch.cat(mlvl_bboxes)
         # TODO: tmp setting
-        mlvl_bboxes_for_nms = xywhr2xyxyr_newr(input_meta['box_type_3d'](
+        mlvl_bboxes_for_nms = xywhr2xyxyr(input_meta['box_type_3d'](
             mlvl_bboxes, box_dim=self.box_code_size).bev)
         mlvl_scores = torch.cat(mlvl_scores)
         mlvl_dir_scores = torch.cat(mlvl_dir_scores)
