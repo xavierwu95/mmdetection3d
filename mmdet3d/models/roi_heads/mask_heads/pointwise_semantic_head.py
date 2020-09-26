@@ -2,7 +2,7 @@ import torch
 from torch import nn as nn
 from torch.nn import functional as F
 
-from mmdet3d.core.bbox.structures import rotation_3d_in_axis
+from mmdet3d.core.bbox.structures.utils import rotation_3d_in_axis_new
 from mmdet3d.models.builder import build_loss
 from mmdet.core import multi_apply
 from mmdet.models import HEADS
@@ -96,6 +96,7 @@ class PointwiseSemanticHead(nn.Module):
 
         part_targets = voxel_centers.new_zeros((voxel_centers.shape[0], 3),
                                                dtype=torch.float32)
+        # TODO: replace it by point_in_boxes_batch
         box_idx = gt_bboxes_3d.points_in_boxes(voxel_centers)
         enlarge_box_idx = enlarged_gt_boxes.points_in_boxes(
             voxel_centers).long()
@@ -114,7 +115,7 @@ class PointwiseSemanticHead(nn.Module):
                 continue
             fg_voxels = voxel_centers[k_box_flag]
             transformed_voxels = fg_voxels - gt_bboxes_3d.bottom_center[k]
-            transformed_voxels = rotation_3d_in_axis(
+            transformed_voxels = rotation_3d_in_axis_new(
                 transformed_voxels.unsqueeze(0),
                 -gt_bboxes_3d.yaw[k].view(1),
                 axis=2)

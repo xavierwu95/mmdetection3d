@@ -68,9 +68,11 @@ def rotation_3d_in_axis_new(points, angles, axis=0):
         points (torch.Tensor): Points of shape (N, M, 3).
         angles (torch.Tensor): Vector of angles in shape (N,)
         axis (int, optional): The axis to be rotated. Defaults to 0.
+
     Raises:
         ValueError: when the axis is not in range [0, 1, 2], it will \
             raise value error.
+
     Returns:
         torch.Tensor: Rotated points in shape (N, M, 3)
     """

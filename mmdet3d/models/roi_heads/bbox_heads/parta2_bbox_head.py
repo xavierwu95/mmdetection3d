@@ -3,8 +3,8 @@ import torch
 from mmcv.cnn import ConvModule, normal_init, xavier_init
 from torch import nn as nn
 
-from mmdet3d.core.bbox.structures import (LiDARInstance3DBoxes,
-                                          rotation_3d_in_axis, xywhr2xyxyr)
+from mmdet3d.core.bbox.structures import LiDARInstance3DBoxes, xywhr2xyxyr
+from mmdet3d.core.bbox.structures.utils import rotation_3d_in_axis_new
 from mmdet3d.models.builder import build_loss
 from mmdet3d.ops import make_sparse_convmodule
 from mmdet3d.ops import spconv as spconv
@@ -339,9 +339,9 @@ class PartA2BboxHead(nn.Module):
                     batch_anchors,
                     pos_bbox_pred.view(-1, code_size)).view(-1, code_size)
 
-                pred_boxes3d[..., 0:3] = rotation_3d_in_axis(
+                pred_boxes3d[..., 0:3] = rotation_3d_in_axis_new(
                     pred_boxes3d[..., 0:3].unsqueeze(1),
-                    (pos_rois_rotation + np.pi / 2),
+                    pos_rois_rotation,
                     axis=2).squeeze(1)
 
                 pred_boxes3d[:, 0:3] += roi_xyz
@@ -432,9 +432,8 @@ class PartA2BboxHead(nn.Module):
             # canonical transformation
             pos_gt_bboxes_ct[..., 0:3] -= roi_center
             pos_gt_bboxes_ct[..., 6] -= roi_ry
-            pos_gt_bboxes_ct[..., 0:3] = rotation_3d_in_axis(
-                pos_gt_bboxes_ct[..., 0:3].unsqueeze(1),
-                -(roi_ry + np.pi / 2),
+            pos_gt_bboxes_ct[..., 0:3] = rotation_3d_in_axis_new(
+                pos_gt_bboxes_ct[..., 0:3].unsqueeze(1), -roi_ry,
                 axis=2).squeeze(1)
 
             # flip orientation if rois have opposite orientation
@@ -526,9 +525,8 @@ class PartA2BboxHead(nn.Module):
         local_roi_boxes = roi_boxes.clone().detach()
         local_roi_boxes[..., 0:3] = 0
         rcnn_boxes3d = self.bbox_coder.decode(local_roi_boxes, bbox_pred)
-        rcnn_boxes3d[..., 0:3] = rotation_3d_in_axis(
-            rcnn_boxes3d[..., 0:3].unsqueeze(1), (roi_ry + np.pi / 2),
-            axis=2).squeeze(1)
+        rcnn_boxes3d[..., 0:3] = rotation_3d_in_axis_new(
+            rcnn_boxes3d[..., 0:3].unsqueeze(1), roi_ry, axis=2).squeeze(1)
         rcnn_boxes3d[:, 0:3] += roi_xyz
 
         # post processing

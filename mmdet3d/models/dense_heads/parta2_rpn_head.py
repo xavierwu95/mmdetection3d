@@ -58,7 +58,7 @@ class PartA2RPNHead(Anchor3DHead):
                      type='Anchor3DRangeGenerator',
                      range=[0, -39.68, -1.78, 69.12, 39.68, -1.78],
                      strides=[2],
-                     sizes=[[1.6, 3.9, 1.56]],
+                     sizes=[[3.9, 1.6, 1.56]],
                      rotations=[0, 1.57],
                      custom_values=[],
                      reshape_out=False),
