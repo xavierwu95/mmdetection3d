@@ -1,6 +1,8 @@
+import cv2
 import numpy as np
 import open3d as o3d
 import torch
+from matplotlib import pyplot as plt
 from open3d import geometry
 
 
@@ -348,13 +350,10 @@ def project_bbox3d_on_img(bboxes3d,
                      cv2.LINE_AA)
 
     cv2.imshow('project_bbox3d_img', img)
-    cv2.waitKey(100)
+    cv2.waitKey(0)
 
 
 if __name__ == '__main__':
-    import cv2
-    from matplotlib import pyplot as plt
-
     from mmdet3d.datasets import KittiDataset
 
     data_root = 'data/kitti'
